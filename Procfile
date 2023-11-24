@@ -1,0 +1,1 @@
+web: java -jar build/libs/SpringWithKotlin-0.0.1.jar
