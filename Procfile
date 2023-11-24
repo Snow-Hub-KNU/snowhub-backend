@@ -1,1 +1,1 @@
-web: java -jar build/libs/SpringWithKotlin-0.0.1.jar
+web: java -Dserver.port=$PORT -Dspring.profiles.active=production $JAVA_OPTS -jar build/libs/SpringWithKotlin-0.0.1.jar
