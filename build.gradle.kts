@@ -22,6 +22,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.springframework.boot:spring-boot-starter-test:3.1.5")
+	testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+	testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
@@ -38,6 +41,10 @@ tasks.withType<Test> {
 
 tasks.bootBuildImage {
 	builder.set("paketobuildpacks/builder-jammy-base:latest")
+}
+
+tasks.test {
+	useJUnitPlatform()
 }
 
 tasks {
