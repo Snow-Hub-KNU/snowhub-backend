@@ -11,7 +11,7 @@ class HelloService {
 
     fun getRandomGreeting(): String {
         val random = Random().nextInt(10)
-        return if (random < 2) {
+        return if (random < 1) {
             "안녕 세상아"
         } else {
             throw IllegalArgumentException("예외 발생!")
