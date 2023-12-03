@@ -2,6 +2,7 @@ package com.example.demo.test
 
 import com.example.demo.service.HelloService
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,5 +25,10 @@ class HelloServiceTest {
         assertThrows<IllegalArgumentException> {
             helloService.getRandomGreeting()
         }
+    }
+
+    @Test
+    fun alwaysFail() {
+        fail<Unit>("This test always fails")
     }
 }
