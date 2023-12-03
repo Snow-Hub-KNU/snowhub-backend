@@ -28,7 +28,7 @@ class HelloServiceTest {
     }
 
     @Test
-    fun alwaysFail() {
+    fun aFail() {
         fail<Unit>("This test always fails")
     }
 }
