@@ -26,7 +26,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-test:3.1.5")
 	testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
 	testImplementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.junit.platform:junit-platform-commons:5.10.1")
 }
 
 tasks.withType<KotlinCompile> {
