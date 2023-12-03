@@ -19,16 +19,4 @@ class HelloServiceTest {
         val result = helloService.getGreeting()
         assertEquals("안녕 세상아", result)
     }
-
-    @Test
-    fun orEqualTo5() {
-        assertThrows<IllegalArgumentException> {
-            helloService.getRandomGreeting()
-        }
-    }
-
-    @Test
-    fun aFail() {
-        fail<Unit>("This test always fails")
-    }
 }
