@@ -43,23 +43,22 @@ class High1Crawler : Crawler {
 
             val firstColumn = slopeNameElements.text()
 
+            val slopeNumberSelector = createSelector(i, if (firstColumn.contains("(")) 2 else 1)
+            val dayStatusColumn = if (firstColumn.contains("(")) 3 else 2
+            val nightStatusColumn = if (firstColumn.contains("(")) 4 else 3
+
             if (firstColumn.contains("(")) {
                 slopeName = firstColumn
-                val slopeNumberSelector = createSelector(i, 2)
-
-                val slopeNumberElements: Elements = doc.select(slopeNumberSelector)
-                val slopeNumber = slopeNumberElements.text()
-
-                val dayStatus = getStatus(doc, i, 3)
-                val nightStatus = getStatus(doc, i, 4)
-
-                println("$slopeName $slopeNumber 주간 운행 상태: $dayStatus, 야간 운행 상태: $nightStatus")
-            } else {
-                val dayStatus = getStatus(doc, i, 2)
-                val nightStatus = getStatus(doc, i, 3)
-
-                slopes.add(Slope(UUID.randomUUID(), slopeName, dayStatus, nightStatus))
             }
+
+            val slopeNumberElements: Elements = doc.select(slopeNumberSelector)
+            val slopeNumber = slopeNumberElements.text()
+
+            val dayStatus = getStatus(doc, i, dayStatusColumn)
+            val nightStatus = getStatus(doc, i, nightStatusColumn)
+
+            slopes.add(Slope(UUID.randomUUID(), "$slopeName $slopeNumber", dayStatus, nightStatus))
+
             i++
         }
 
