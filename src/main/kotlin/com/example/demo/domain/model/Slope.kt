@@ -5,5 +5,6 @@ import java.util.UUID
 data class Slope(
         val slopeId: UUID,
         val slopeName: String,
-        val isOpen: Boolean,
+        val dayStatus: Boolean,
+        val nightStatus: Boolean,
 )

@@ -7,4 +7,5 @@ data class SkiResort(
         val resortName: String,
         val openHours: String,
         val closeHours: String,
+        val slopes: List<Slope> = listOf(),
 )
