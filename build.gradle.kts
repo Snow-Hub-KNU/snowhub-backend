@@ -25,6 +25,8 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.springframework.boot:spring-boot-starter-test:3.1.5")
 	implementation("org.junit.platform:junit-platform-commons:1.10.1")
+	implementation("io.springfox:springfox-swagger-ui:3.0.0")
+	implementation("io.springfox:springfox-swagger2:3.0.0")
 	testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
 }
 
