@@ -1,0 +1,66 @@
+[ 사용자 목록 ]
+rs60504@naver.com
+a5b4c3d2e1
+
+pretty@naver.com
+a1b2c3d4e3
+
+[참고]
+JSON형식으로 @Controller로 Request시, @RequestParam을 사용하면, 오류가 발생.
+=> MissingServletRequestParameterException: Required String parameter 'name' is not present
+기본적으로,  @RequestParam 은 url 상에서 데이터를 찾기 때문임.
+그래서, Map의 KEY:VALUE 형태로 받음.
+
+[필터 등록]
+
+SecurityConfig{
+    @Autowired
+    private VerifyTokenFilter verifyTokenFilter;
+~~
+
+    addFilterBefore(verifyTokenFilter, UsernamePasswordAuthenticationFilter.class)
+}
+// 일반적인 필터를 등록할 경우, @Component로 등록된 Filter를 가져와서 addFiterBefore/After 메서드에 의존성을 주입한다.
+   하지만, OncePerRequestFilter의 경우, @Component만 해도 자동으로 fiterchain에 등록이 된다.(Before)
+
+[특정 URL로 요청시 커스텀 필터 Ignore방법]
+Custom Filter는 "security filter chain"이 아닌, "default filter chain"에 등록이 되므로,
+해당 Custom필터를 @Component를 통해서 "Bean"에 등록하는 것이 아닌, 직접 new를 통해서 SecurityConfig에 등록을
+해야만 한다.
+
+[권한이 필요한 페이지에 접근하는 방법]
+@Secured 또는 @PreAuthorize를 이용하는데, 이때 SecurityContextHolder에 저장된 Authentication 객체를 가져와서 확인을 해본다.
+그래서 토큰을 이용할 경우, JWT Filter에서 Authentication을 계속 만들어 줘야한다.
+참고로 setAuthentication()을 할 경우 loadByUsernamePassword이 실행이 된다.
+
+==========
+Authentication을 만들때, loadbyUsername을 통해서 JWTFilter로 load를 한 후, 해당 UserDetails를 가지고
+Authentication을 만들어 주자.
+role의 경우 local DB에 저장해도 되는데 굳이?? => Custom Claims을 만들어 주자.
+Custom Claims을 사용하더라도, local DB는 필요하다.
+
+@Service, @Configuration, @Component => 전부다 @Component
+
+@Builder는 @AllArgsConstructor와 반드시 같이 사용.
+@NoArgsConstructor는 기본 생성자
+
+----------
+페이지 권한 설정
+@PreAuthorize("hasRole('admin')"), 먼저 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true) 활성화
+UserDetails.authorities(new SimpleGrantedAuthority("ROLE_"+role))를 통해서 권한을 부여함.
+그 후,
+Authentication authentication =
+                            new UsernamePasswordAuthenticationToken(getUserDetails,"123456789",getUserDetails.getAuthorities());
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+authentication을 만든 후, SecurityContextHolder에 저장을 함.
+그러면, @PreAuthorize가 실행이 되면, Authentication의 authorities를 가져와 확인을 함.
+
+
+[ VerifyTokenFilter에 @Service CustomUserDetailService 주입방법 ]
+1. 해당 필터 빈에 등록 -> 2. SercurityConfig에 주입 -> 3. 해당 필터를 사용할때만 의존성 주입.
+일반 클래스에는 @Autowired X
+
+// 일회성이라서 사용x: redirectAttributes.addFlashAttribute("token",idToken);
+//redirectAttributes.addAttribute("token",idToken);// url에 실어서 보내기
+//redirectAttributes.addAttribute("refreshtoken",refreshToken);

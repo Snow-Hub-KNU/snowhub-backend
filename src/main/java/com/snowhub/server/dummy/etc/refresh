@@ -1,0 +1,71 @@
+    /*
+    @GetMapping("/test/refresh")
+    // 수정사항. 먼저 VerifyTokenFilter에서 refreshToken과 accessToken 둘다 검증을 한 다음 넘겨준다.
+    public String doRefreshToken(
+
+            HttpServletRequest req,
+            HttpServletResponse res,
+            @RequestHeader(name = "Authorization")String getRefreshToken) throws IOException {
+
+        // Bearer에서 토큰 데이터 가져오기.
+        String refreshToken;
+        if (getRefreshToken != null && getRefreshToken.startsWith("Bearer ")) {
+            refreshToken = getRefreshToken.substring(7); // Extracting the token after "Bearer "
+        }
+        else{
+            // 추후 ExceptionHandler와 예외페이지 생성
+            throw new RuntimeException("There is no Refresh Token!!!");
+        }
+
+        // DB에서 refreshToken과 일치여부확인
+        refreshToken = userService.findRefreshToken(refreshToken);
+
+
+        // Header설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+        // Payload설정
+        MultiValueMap<String, String> payload = new LinkedMultiValueMap<>();
+        payload.add("client_id", GoogleConfig.getClientId());
+        payload.add("client_secret", GoogleConfig.getClientSecret());
+        payload.add("grant_type", "refresh_token");
+        payload.add("refresh_token", refreshToken);
+
+        // Header + Payload
+        HttpEntity<MultiValueMap<String, String>> googleReq =
+                new HttpEntity<>(payload, headers);
+
+        RestTemplate rt = SingleRestTemplate.getInstance();
+
+        ResponseEntity<String> googleResponse = rt.exchange(
+                "https://oauth2.googleapis.com/token",
+                HttpMethod.POST,
+                googleReq,
+                String.class
+        );
+
+        String val = googleResponse.getBody();
+        JSONObject jsonObject = new JSONObject(val);
+
+        String accessToken = (String) jsonObject.get("access_token");
+        int expTime = (Integer) jsonObject.get("expires_in");
+        String idToken = (String) jsonObject.get("id_token");
+        String tokenType = (String) jsonObject.get("token_type");
+
+        System.out.println(idToken);
+        System.out.println(refreshToken);
+
+        TokenSender tokenSender = TokenSender.builder()
+                .request(req)
+                .response(res)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .url("/test")
+                .build();
+        tokenSender.SendToken();
+
+        return HttpStatus.OK.toString();
+    }
+
+     */
