@@ -1,31 +1,11 @@
 package com.snowhub.server.dummy.dummy;
 
-import com.snowhub.server.dummy.config.SingleRestTemplate;
-import com.snowhub.server.dummy.config.SupplierConfig.GoogleConfig2;
-import com.snowhub.server.dummy.model.User;
-import com.snowhub.server.dummy.service.security.CustomUserDetailsService;
-import com.snowhub.server.dummy.service.UserService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.json.JSONObject;
-import org.springframework.http.*;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-
 public class Google {
+    /*
     private static Google google;
     private CustomUserDetailsService customUserDetailsService;
     private UserService userService;
-    private GoogleConfig2 GoogleConfig;
+    private GoogleConfig GoogleConfig;
 
     private Google(){
 
@@ -199,5 +179,7 @@ public class Google {
 
 
     }
+
+     */
 
 }

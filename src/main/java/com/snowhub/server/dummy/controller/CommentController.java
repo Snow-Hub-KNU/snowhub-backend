@@ -1,6 +1,7 @@
 package com.snowhub.server.dummy.controller;
 
-import com.snowhub.server.dummy.dto.comment.CommentDTO;
+import com.snowhub.server.dummy.dao.CommentFetcher;
+import com.snowhub.server.dummy.dto.comment.CommentParam;
 import com.snowhub.server.dummy.model.Reply;
 import com.snowhub.server.dummy.repository.ReplyRepo;
 import com.snowhub.server.dummy.service.CommentService;
@@ -22,8 +23,8 @@ public class CommentController {
 
     @PostMapping("/board/comment")
     public ResponseEntity<?> getComment(@RequestParam(name = "id") int replyId,
-                                        @RequestBody CommentDTO commentDTO){
-        return commentService.saveComment(commentDTO,replyId);
+                                        @RequestBody CommentParam commentParam){
+        return commentService.saveComment(commentParam,replyId);
 
     }
 
@@ -33,13 +34,10 @@ public class CommentController {
                 ()-> new NullPointerException("/board/reply/commment")
         );
 
-        List<CommentDTO> commentDTO = commentService.getComment(reply);
-
+        List<CommentFetcher> commentFetchers = commentService.getComment(reply);
 
         // reply로 comment에 관련 답글찾기
-
-        return ResponseEntity.ok(commentDTO);
-
+        return ResponseEntity.ok(commentFetchers);
     }
 
 }

@@ -1,6 +1,8 @@
 package com.snowhub.server.dummy.module;
 
 import com.snowhub.server.dummy.config.SingleRestTemplate;
+import com.snowhub.server.dummy.dto.oauth.FireBaseDetails;
+import com.snowhub.server.dummy.dto.oauth.GoogleDetails;
 import com.snowhub.server.dummy.filter.tokenError.ErrorType;
 import com.snowhub.server.dummy.model.User;
 import com.snowhub.server.dummy.service.security.CustomUserDetailsService;
@@ -14,7 +16,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.http.*;
@@ -26,6 +27,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -37,7 +41,7 @@ public class Firebase {
 
     // 1. 변수 초기화
 
-    // Service는 Bean 주입을 하자.
+    // Service는 Bean 주입을 할 수가 없다. <- 빈 등록이 안되어 있는데 가능하나? (고려)
     private CustomUserDetailsService customUserDetailsService;
     private UserService userService;
     private final FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
@@ -95,65 +99,54 @@ public class Firebase {
         } catch (FirebaseAuthException | IOException | ServletException e) { // 강제로 예외 발생안시키고, 다음꺼 실행
             // 2. 토큰 오류 처리와 로직
 
-            if(e.getMessage().equals(ErrorType.Not_Valid_Token.getValue())||
-                    e.getMessage().equals(ErrorType.Parse_Error.getValue())
-            ){
-                // 1. 이상한 토큰을 받은 경우.
-                handleException(response,e);
-                return;
+            // Token_Expiration + RefreshToken!=null -> accessToken이 만료되었지만, RefreshToken은 가지고 있는 상태라서,
+            // 다음 과정(RefreshToken)으로 이동을 해도 괜찮을 듯. <- 검증된 사용자니까
+
+            if(e.getMessage().equals(ErrorType.Token_Expiration.getValue()) && RefreshToken!=null ){
+                // RefreshToken 로직으로 넘어가기 위해서 일부러 비워둠.
             }
-            else if(e.getMessage().equals(ErrorType.Token_Expiration.getValue()) && RefreshToken==null ){
-                // 2. 만료된 firebase 토큰 + RefreshToken NULL
-                // 프론트엔드로 해당 오류 전송 -> 리액트에서 해당 오류에 맞게 accessToken과 refreshToken 함께 재전송
+            else{
                 handleException(response,e);
                 return;
+
             }
 
         }
 
-        // NOT_FireBaseToken인 경우 -> 무조건 로그인 페이지로 redirect
+        // NOT_FireBaseRefreshToken인 경우 -> 무조건 로그인 페이지로 redirect
 
         // 2. Firebase의 refeshToken인지 검증. 실패시 status는 false로 종료.
         try{
             log.info("3. Check RefreshToken");
-            // Header Setting
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
-            // Payload Setting
+            // Payload
             MultiValueMap<String,String> payload = new LinkedMultiValueMap<>();
             payload.add("grant_type","refresh_token");
             payload.add("refresh_token",RefreshToken);
 
+            FireBaseDetails.ReissuanceToken reissuanceToken = CustomHttpClient.getInstance().mutate()
+                    .build()
+                    .post()
+                    .uri("https://securetoken.googleapis.com/v1/token?key=AIzaSyBTLAv6wGA--ago8nUor445hdho3eIvqnA")
+                    .header("Content-type", "application/x-www-form-urlencoded;charset=utf-8")
+                    .body(BodyInserters.fromFormData(payload))
+                    .retrieve()
+                    .bodyToMono(FireBaseDetails.ReissuanceToken.class)
+                    .block();
+            
+            String idToken = reissuanceToken.getId_token();
+            //String refreshToken = reissuanceToken.getRefresh_token();
 
-            RestTemplate rt = SingleRestTemplate.getInstance();
-            // Header + Payload
-            HttpEntity<MultiValueMap<String, String>> firebaseReq =
-                    new HttpEntity<>(payload, headers);
+            // RefreshToken은 항상 로그인을 할때 마다 발급이 되므로, 굳이 갱신할 필요가 없다.
+            // 그리고 위에서 재발급 받은 토큰 = 로그인 시 발급 받은 토큰
 
 
-            ResponseEntity<String> firebaseResponse = rt.exchange(
-                    "https://securetoken.googleapis.com/v1/token?key=AIzaSyBTLAv6wGA--ago8nUor445hdho3eIvqnA",
-                    HttpMethod.POST,
-                    firebaseReq,
-                    String.class
-            );
-
-            String getData = firebaseResponse.getBody();
-            JSONObject jsonObject = new JSONObject(getData);
-
-            // 기존 회원의 refreshToken을 갱신해준다.
-            User findUser = userService.findRefreshToken(RefreshToken);// refreshToken으로 User찾기.
-            String email = findUser.getEmail();
-            //String username = findUser.getDisplayName();
-
-            String idToken = (String)jsonObject.get("id_token");
-            //String refreshToken = (String)jsonObject.get("refresh_token");
-
-            //userService.updateRefreshToken(refreshToken,email);// 기존 refreshToken을 새로 교체 -> 원래 refreshTokne 유지!
 
 
             // Authentication을 등록한다.
+            User findUser = userService.findRefreshToken(RefreshToken);// refreshToken으로 User찾기.
+            String email = findUser.getEmail();
+
             UserDetails getUserDetails = customUserDetailsService.loadUserByEmail(email);
             Authentication authentication =
                     new UsernamePasswordAuthenticationToken(getUserDetails,null,getUserDetails.getAuthorities());
@@ -162,8 +155,8 @@ public class Firebase {
 
             //굳이 request에 실어서 보내지 말고, 여기서 response의 header에 담아서 처리하자.
 
-            response.addHeader("accesstoken",idToken);
-            response.addHeader("refreshtoken",RefreshToken);
+            response.addHeader("IdTokenCookie",idToken);
+            response.addHeader("refreshTokenCookie",RefreshToken);
             log.info("4. RefreshToken Check Completed");
             filterChain.doFilter(request,response);
 
@@ -270,3 +263,57 @@ public class Firebase {
     -> sol
     response에 에러 셋팅을 해서 보내는 방법 말고는 없어보인다.
 */
+
+
+
+
+/*
+// 기존 FireBase 토큰 에러 처리
+            if(e.getMessage().equals(ErrorType.Not_Valid_Token.getValue())||
+                    e.getMessage().equals(ErrorType.Parse_Error.getValue())
+            ){
+                // 1. 이상한 토큰을 받은 경우.
+                handleException(response,e);
+                return;
+            }
+            else if(e.getMessage().equals(ErrorType.Token_Expiration.getValue()) && RefreshToken==null ){
+                // 2. 만료된 firebase 토큰 + RefreshToken NULL
+                // 프론트엔드로 해당 오류 전송 -> 리액트에서 해당 오류에 맞게 accessToken과 refreshToken 함께 재전송
+                handleException(response,e);
+                return;
+            }
+*/
+
+
+
+/*
+RestTemplate을 이용한 통신
+            // Header
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+
+            // Payload
+            MultiValueMap<String,String> payload = new LinkedMultiValueMap<>();
+            payload.add("grant_type","refresh_token");
+            payload.add("refresh_token",RefreshToken);
+
+
+            RestTemplate rt = SingleRestTemplate.getInstance();
+            // Header + Payload
+            HttpEntity<MultiValueMap<String, String>> firebaseReq =
+                    new HttpEntity<>(payload, headers);
+
+
+            ResponseEntity<String> firebaseResponse = rt.exchange(
+                    "https://securetoken.googleapis.com/v1/token?key=AIzaSyBTLAv6wGA--ago8nUor445hdho3eIvqnA",
+                    HttpMethod.POST,
+                    firebaseReq,
+                    String.class
+            );
+
+            String getData = firebaseResponse.getBody();
+            JSONObject jsonObject = new JSONObject(getData);
+
+            String idToken = (String)jsonObject.get("id_token");
+            String refreshToken = (String)jsonObject.get("refresh_token");
+ */

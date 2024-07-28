@@ -1,4 +1,4 @@
-package com.snowhub.server.dummy.dto.reply;
+package com.snowhub.server.dummy.dao;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 
 @Getter
 @Setter
-public class BoardDetail_ReplyDTO {
+public class ReplyFetcher {
     private int id;
     private String name;
     private String content;

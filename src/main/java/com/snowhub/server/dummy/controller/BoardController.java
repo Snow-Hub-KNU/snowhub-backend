@@ -1,15 +1,14 @@
 package com.snowhub.server.dummy.controller;
 
 import com.snowhub.server.dummy.dto.board.BoardParam;
-import com.snowhub.server.dummy.dto.board.BoardListDTO;
-import com.snowhub.server.dummy.dto.reply.Board_ReplyDTO;
-import com.snowhub.server.dummy.dto.reply.BoardDetail_ReplyDTO;
+import com.snowhub.server.dummy.dao.BoardFetcher;
+import com.snowhub.server.dummy.dto.board.TmpBoardParam;
+import com.snowhub.server.dummy.dto.reply.BoardWithReplies;
+import com.snowhub.server.dummy.dao.ReplyFetcher;
 import com.snowhub.server.dummy.model.Board;
 
 import com.snowhub.server.dummy.model.TmpBoard;
-import com.snowhub.server.dummy.model.User;
 import com.snowhub.server.dummy.repository.BoardRepo;
-import com.snowhub.server.dummy.repository.UserRepo;
 import com.snowhub.server.dummy.service.BoardService;
 import com.snowhub.server.dummy.service.ReplyService;
 import com.snowhub.server.dummy.service.TmpBoardService;
@@ -40,8 +39,6 @@ public class BoardController {
     private final TmpBoardService tmpBoardService;
 
     private final BoardRepo boardRepo;
-    private final UserRepo userRepo;
-
 
     @PostMapping("/board/write")
     public ResponseEntity<?> boardWrite(@Valid @RequestBody BoardParam boardDTO,
@@ -51,67 +48,57 @@ public class BoardController {
         return boardService.saveBoard(boardDTO,request);
     }
 
+    // - 게시글 임시 저장하기
     @PostMapping("/board/tmp")
-    public ResponseEntity<?> boardTmpSave(@RequestBody TmpBoard tmpBoard, HttpServletRequest request){
+    public ResponseEntity<?> boardTmpSave(@RequestBody TmpBoardParam tmpBoardParam, HttpServletRequest request){
         // 임시저장을 하는데, 굳이 검사를 할 필요가 없다.
-        return tmpBoardService.saveTmpBoard(tmpBoard,request);
+        return tmpBoardService.saveTmpBoard(tmpBoardParam,request);
 
     }
 
+    // - 임시 저장된 게시글 불러오기
     @GetMapping("/board/tmp")
     public TmpBoard getTmpBoard(HttpServletRequest request){
         return tmpBoardService.getTmpBoard(request);
     }
 
+    // - 게시글 불러오기
     @GetMapping("/board/list")
     public ResponseEntity<?> boardList(@RequestParam int page,@RequestParam String category){
 
-        List<BoardListDTO> boardListPack = new ArrayList<>();
-        //
-        PageRequest pageRequest=null;
-        Page<Board> getPages = null;
+        Page<Board> pages;
+
         if(category.equals("all")){
-            pageRequest = PageRequest.of(page,16, Sort.by("id").ascending());
-            getPages = boardRepo.findAll(pageRequest);
+            // 카테고리 구분없이 id 오름차순으로 가져오기 <- 가장 최신순으로 
+            pages = boardRepo.findAll(PageRequest.of(page,16, Sort.by("id").descending()));
         }
         else{
-            pageRequest = PageRequest.of(page,16, Sort.by("id").ascending());
-            getPages = boardRepo.findByCategory(category,pageRequest);
-
+            // 카테고리 별로 + id 오름차순으로 가져오기 <- 가장 최신순으로
+            pages = boardRepo.findByCategory(category,PageRequest.of(page,16, Sort.by("id").descending()));
         }
 
-        //PageRequest pageRequest2 = PageRequest.of(page,16);
-        //Page<Board> tester = boardRepo.findByCategory("Season",pageRequest2);
+        List<BoardFetcher> returnBoards = new ArrayList<>(pages.stream()
+                .map(   // param = Board, return BoadListDTO
+                        (e) -> BoardFetcher.builder()
+                                .id(e.getId())
+                                .category(e.getCategory())
+                                .title(e.getTitle())
+                                .writer(e.getUser().getDisplayName())
+                                .count(e.getCount())
+                                .createDate(e.getCreateDate())
+                                .build()
+                )
+                .toList())
+        ;
+        
+        // 전체 페이지 개수
+        BoardFetcher pageSizeEntity = new BoardFetcher();
+        pageSizeEntity.setId(pages.getTotalPages());
+        pageSizeEntity.setTitle(pages.getTotalPages()+"");
 
+        returnBoards.add(pageSizeEntity);
 
-
-        Iterator<Board> iterator = getPages.iterator();
-        while(iterator.hasNext()){
-           Board rawBoard = iterator.next();
-           BoardListDTO boardList = BoardListDTO.builder()
-                   .id(rawBoard.getId())
-                   .category(rawBoard.getCategory())
-                   .title(rawBoard.getTitle())
-                   .writer(rawBoard.getUser().getDisplayName())
-                   .count(rawBoard.getCount())
-                   .createDate(rawBoard.getCreateDate())
-                   .build();
-            boardListPack.add(boardList);
-        }
-
-        // 게시판 전체 페이지를 넣기 위한 Dummy Data
-        BoardListDTO totalPageDTO = new BoardListDTO();
-        totalPageDTO.setId(getPages.getTotalPages());
-        totalPageDTO.setTitle(getPages.getTotalPages()+"");
-
-        boardListPack.add(totalPageDTO);
-
-
-        // BoardDTO를 생성하지 않은 경우 -> StackOverFlow 발생.
-        // 이유: json 내 obj 무한 참조.
-
-        //
-        String json = new Gson().toJson(boardListPack);
+        String json = new Gson().toJson(returnBoards);
 
         return ResponseEntity.ok(json);
     }
@@ -121,14 +108,13 @@ public class BoardController {
     public ResponseEntity<?> boardDetail(@RequestParam(name = "id") int boardId,
                                          @RequestParam(name = "number")int number){
 
-
-        BoardListDTO board = boardService.getBoard(boardId);// 이거 안하면 Json으로 인해서 StackOverFlow 발생
-        List<BoardDetail_ReplyDTO> reply = replyService.getReply(boardId);// 마찬가지이유.
+        BoardFetcher fetchBoard = boardService.getBoard(boardId);// 이거 안하면 Json으로 인해서 StackOverFlow 발생
+        List<ReplyFetcher> fetchReplies = replyService.getReply(boardId);// 마찬가지이유.
 
         // Board와 Reply를 동시에 반환을 한다.
-        Board_ReplyDTO boardReplyDTO = new Board_ReplyDTO();
-        boardReplyDTO.setBoardDTO(board);
-        boardReplyDTO.setReplyDTO(reply);
+        BoardWithReplies boardWithRepliesDTO = new BoardWithReplies();
+        boardWithRepliesDTO.setBoardDTO(fetchBoard);
+        boardWithRepliesDTO.setReplyDTO(fetchReplies);
 
         //Board의 count +1을 한다.
         /*
@@ -140,40 +126,8 @@ public class BoardController {
             boardService.updateCount(boardId);
         }
 
-        return ResponseEntity.ok(boardReplyDTO);// body T에는 board Entity가 들어가야.
+        return ResponseEntity.ok(boardWithRepliesDTO);// body T에는 board Entity가 들어가야.
     }
-
-    @GetMapping("/dummy/check")
-    public String doCheck(){
-       List<User> users= userRepo.findAll();
-       User user = users.get(0);
-       List<Board> boardList = user.getBoardList();
-       for(Board b: boardList){
-           System.out.println("user: "+b.getUser().getEmail());
-           System.out.println("board: "+b.getTitle());
-       }
-
-       return "OK";
-    }
-
-    @GetMapping("/dummy/board")
-    public void fillDummyBoard(){
-
-        User findUser = userRepo.findByEmail("tarto123z@gmail.com");
-        for(int i=0; i<100; i++){
-            Board board = new Board();
-
-
-            board.setUser(findUser);
-            board.setTitle("dummy"+i);
-            board.setContent("test");
-            board.setCategory("Season");
-
-            boardRepo.save(board);
-        }
-
-    }
-
 }
 
 /*

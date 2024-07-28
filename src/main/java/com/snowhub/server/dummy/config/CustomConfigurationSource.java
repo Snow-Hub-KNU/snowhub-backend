@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Configuration
 public class CustomConfigurationSource {
 
-    public static String warmup="init";
+    public static String warmup="init";// <- 위치수정
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

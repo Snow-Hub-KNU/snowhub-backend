@@ -1,6 +1,5 @@
 package com.snowhub.server.dummy.controller.dummy;
 
-import com.snowhub.server.dummy.config.TestAccessToken;
 import com.snowhub.server.dummy.model.User;
 import com.snowhub.server.dummy.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
@@ -12,14 +11,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
-
-import java.io.IOException;
 
 @Slf4j
 @AllArgsConstructor
@@ -28,27 +23,6 @@ public class RestUserController {
     private final FirebaseAuth firebaseAuth;
     private final UserService userService;
 
-    @PostMapping("/home/signup")
-    public ResponseEntity<?> doSignup(@RequestBody User user) throws FirebaseAuthException {
-
-        UserRecord.CreateRequest request = new UserRecord.CreateRequest()
-                .setEmail(user.getEmail())
-                //.setEmailVerified(false)// 수정
-                //.setPassword(user.getPassword()) !!!!!
-                //.setPhoneNumber(user.getPhoneNumber())
-                .setDisplayName(user.getDisplayName())// username
-                ;
-                //.setPhotoUrl(user.getPhotoUrl())
-                //.setDisabled(false);
-
-        // 1. Firebase에 저장.
-        UserRecord userRecord = firebaseAuth.createUser(request);
-
-        // 2. Local에 저장.
-        userService.saveUser(user);
-
-        return ResponseEntity.ok("Successfully created new user: "+userRecord.getDisplayName());
-    }
 
     // hasRole인 경우 ROLE_ 생략가능.
     // SecurityContextHolder에서 Authentication의 authority를 확인.
@@ -92,28 +66,6 @@ public class RestUserController {
     @GetMapping("/demo/admin")
     public String getToken2(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authorizationHeader) throws FirebaseAuthException {
         return "Testing! Only Admin Access";
-    }
-
-    @GetMapping("/test/login")
-    public String returnAccessToken(HttpServletRequest request,
-                                    HttpServletResponse response){
-        TestAccessToken testAccessToken = TestAccessToken.getInstance();
-        String accessToken = testAccessToken.getVal();
-        System.out.println(accessToken);
-        Cookie cookie = new Cookie("accesstoken",accessToken);
-        cookie.setPath("/");
-        cookie.setMaxAge(3600);
-        cookie.setDomain("localhost");
-
-        response.addCookie(cookie);
-        return accessToken;
-
-    }
-
-    @GetMapping("/test/firebase")
-    public String getVal(){
-        TestAccessToken test = TestAccessToken.getInstance();
-        return test.getVal();
     }
 
     public void checkUpdatedToken(HttpServletRequest request, HttpServletResponse response){

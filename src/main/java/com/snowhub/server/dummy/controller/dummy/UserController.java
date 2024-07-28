@@ -1,6 +1,5 @@
 package com.snowhub.server.dummy.controller.dummy;
 
-import com.snowhub.server.dummy.config.TestAccessToken;
 import com.snowhub.server.dummy.model.User;
 import com.snowhub.server.dummy.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
@@ -12,11 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -28,7 +23,6 @@ import org.springframework.web.servlet.view.RedirectView;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 @Slf4j
 @AllArgsConstructor
@@ -42,68 +36,7 @@ public class UserController {
         // login -> login페이지 띄우기 -> 해당 로그인 페이지에서 google버튼을 누르면, 해당 url로 이동.
         return "home.html";
     }
-    @PostMapping("/home/signin")
-    // JSON으로 데이터가 넘어옴.
-    public String verifyToken(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            @RequestBody Map<String, String> requestBody
-    ) throws FirebaseAuthException {
-        String email = requestBody.get("email");
-        String password = requestBody.get("password");
-        // WebClient URL, firebase로 API요청을 보내기 위해서.
-        WebClient webClient = WebClient.create();
 
-        // Body elements
-        String returnSecureToken = "true";
-
-        // Body Payload
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("email", email);
-        formData.add("password", password);
-        formData.add("returnSecureToken", returnSecureToken);
-
-        // Firebase API를 이용해서, 로그인을 진행한다. <- 검증을 한다.
-        // 그리고, idToken, refreshToken 받아오기.
-        String getUserInfo = webClient.post()
-                .uri("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBTLAv6wGA--ago8nUor445hdho3eIvqnA")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromFormData(formData))
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        JSONObject jsonObject = new JSONObject(getUserInfo);
-
-        String username = (String) jsonObject.get("displayName");
-        String idToken = (String) jsonObject.get("idToken");
-        String refreshToken = (String) jsonObject.get("refreshToken"); // refreshToken은 DB에 저장.
-        userService.updateRefreshToken(refreshToken,email);
-
-
-        Cookie idCookie = new Cookie("firebaseIdCookie",idToken);
-        idCookie.setDomain("localhost");
-        idCookie.setPath("/");
-        idCookie.setMaxAge(3600);
-        idCookie.setSecure(false);
-
-
-        Cookie refreshCookie = new Cookie("firebaseRefreshCookie",refreshToken);
-        refreshCookie.setDomain("localhost");
-        refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(3600);
-        refreshCookie.setSecure(false);
-
-
-
-        response.addCookie(idCookie);
-        response.addCookie(refreshCookie);
-
-        TestAccessToken test = TestAccessToken.getInstance();
-        test.setVal(idToken);
-
-        return "redirect:/test"; // 첫 인덱스 페이지로 쿠키를 전송
-    }
 
     @GetMapping("/test/logout")
     public String doGoogleLogout(HttpServletRequest request, HttpServletResponse response) throws Exception {

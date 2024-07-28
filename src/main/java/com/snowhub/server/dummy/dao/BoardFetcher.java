@@ -1,4 +1,4 @@
-package com.snowhub.server.dummy.dto.board;
+package com.snowhub.server.dummy.dao;
 
 import lombok.*;
 
@@ -10,7 +10,7 @@ import java.sql.Timestamp;
 @Builder
 @Getter
 @Setter
-public class BoardListDTO { //category, title, writer, date, count -> 리액트에 뿌리기 위한 DTE ( 전체 게시글 보기 )
+public class BoardFetcher { //category, title, writer, date, count -> 리액트에 뿌리기 위한 DTE ( 전체 게시글 보기 )
 
     private int id;
     private String category;

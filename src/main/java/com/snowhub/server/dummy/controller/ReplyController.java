@@ -1,6 +1,6 @@
 package com.snowhub.server.dummy.controller;
 
-import com.snowhub.server.dummy.dto.reply.ReplyDTO;
+import com.snowhub.server.dummy.dto.reply.ReplyParam;
 import com.snowhub.server.dummy.service.ReplyService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +16,8 @@ public class ReplyController {
 
     // 1. Reply 등록하기.
     @PostMapping("/board/reply")
-    public ResponseEntity<?> getReply(@RequestBody ReplyDTO replyDTO){
-        return replyService.saveReply(replyDTO);
+    public ResponseEntity<?> getReply(@RequestBody ReplyParam replyParam){
+        return replyService.saveReply(replyParam);
     }
 
 }

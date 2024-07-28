@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ReplyDTO {
+public class ReplyParam {
 
     // 게시글 고유 넘버.
     private String boardId;

@@ -1,7 +1,7 @@
 package com.snowhub.server.dummy.service;
 
 import com.snowhub.server.dummy.dto.board.BoardParam;
-import com.snowhub.server.dummy.dto.board.BoardListDTO;
+import com.snowhub.server.dummy.dao.BoardFetcher;
 import com.snowhub.server.dummy.model.Board;
 import com.snowhub.server.dummy.model.User;
 import com.snowhub.server.dummy.repository.BoardRepo;
@@ -57,13 +57,13 @@ public class BoardService {
     }
 
     @Transactional
-    public BoardListDTO getBoard(int id){
+    public BoardFetcher getBoard(int id){
         Optional<Board> optionalBoard = boardRepo.findById(id);
-        Board board = optionalBoard.orElseGet(
-                ()->{ throw new NullPointerException("There is no board");}
+        Board board = optionalBoard.orElseThrow(
+                ()-> new NullPointerException("There is no board")
         );
 
-        BoardListDTO boardDTO = BoardListDTO.builder()
+        return BoardFetcher.builder()
                 .id(board.getId())
                 //.count(board.getCount()) 추후에 추가할 예정
                 .title(board.getTitle())
@@ -72,19 +72,14 @@ public class BoardService {
                 .category(board.getCategory())
                 .createDate(board.getCreateDate())
                 .build();
-
-        return boardDTO;
     }
 
     @Transactional
     public void updateCount(int boardId){
         // board 가져오기 -> 원본을 변경 -> orig와 변경된 board 서로 compare -> Dirty Checking에 의해서 자동 update
-        Board board = boardRepo.findById(boardId).orElseGet(
-                ()->{
-                    throw new NullPointerException("Can't find board:"+boardId);
-                }
+        Board board = boardRepo.findById(boardId).orElseThrow(
+                ()-> new NullPointerException("Can't find board:"+boardId)
         );
-        System.out.println("boardService/updateCount");
         board.setCount(board.getCount()+1);
 
     }

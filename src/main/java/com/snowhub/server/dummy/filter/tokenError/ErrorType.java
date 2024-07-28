@@ -2,6 +2,7 @@ package com.snowhub.server.dummy.filter.tokenError;
 
 import lombok.Getter;
 
+
 @Getter
 public enum ErrorType {
     Not_Valid_Token("Failed to parse Firebase ID token. Make sure you passed a string that represents a complete and valid JWT. See https://firebase.google.com/docs/auth/admin/verify-id-tokens for details on how to retrieve an ID token."),
@@ -9,7 +10,7 @@ public enum ErrorType {
     Parse_Error("Failed to parse Firebase ID token. Make sure you passed a string that represents a complete and valid JWT. See https://firebase.google.com/docs/auth/admin/verify-id-tokens for details on how to retrieve an ID token.")
     ;
 
-    private String value;
+    private final String value;
 
     ErrorType(String value) {
         this.value=value;
